@@ -1,0 +1,88 @@
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+
+public class Alumno
+{
+    public string DNI { get; set; }
+    public string Nombre { get; set; }
+    public int Edad { get; set; }
+}
+
+public class RepositorioAlumnos
+{
+    private readonly string cadenaConexion = "Data Source=DESKTOP-ULHSB8D\\SQLEXPRESS;Initial Catalog=Anderson;"+
+                                                "Integrated Security=True;";
+
+    public List<Alumno> ObtenerAlumnos()
+    {
+        List<Alumno> alumnos = new List<Alumno>();
+
+        using (SqlConnection conexion = new SqlConnection(cadenaConexion))
+        {
+            conexion.Open();
+
+            string consulta = "SELECT DNI, Nombre, Edad FROM Alumnos";
+
+            using (SqlCommand comando = new SqlCommand(consulta, conexion))
+            {
+                using (SqlDataReader reader = comando.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Alumno alumno = new Alumno
+                        {
+                            DNI = reader["DNI"].ToString(),
+                            Nombre = reader["Nombre"].ToString(),
+                            Edad = Convert.ToInt32(reader["Edad"])
+                        };
+
+                        alumnos.Add(alumno);
+                    }
+                }
+            }
+        }
+
+        return alumnos;
+    }
+
+    public void AgregarAlumno(Alumno alumno)
+    {
+        using (SqlConnection conexion = new SqlConnection(cadenaConexion))
+        {
+            conexion.Open();
+
+            string consulta = "INSERT INTO Alumnos (DNI, Nombre, Edad) VALUES (@DNI, @Nombre, @Edad)";
+
+            using (SqlCommand comando = new SqlCommand(consulta, conexion))
+            {
+                comando.Parameters.AddWithValue("@DNI", alumno.DNI);
+                comando.Parameters.AddWithValue("@Nombre", alumno.Nombre);
+                comando.Parameters.AddWithValue("@Edad", alumno.Edad);
+
+                comando.ExecuteNonQuery();
+            }
+        }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        RepositorioAlumnos repositorio = new RepositorioAlumnos();
+
+        // Agregar un alumno
+        Alumno nuevoAlumno = new Alumno { DNI = "12345678", Nombre = "Ejemplo Alumno", Edad = 20 };
+        repositorio.AgregarAlumno(nuevoAlumno);
+
+        // Obtener y mostrar todos los alumnos
+        List<Alumno> alumnos = repositorio.ObtenerAlumnos();
+        Console.WriteLine("Alumnos en la base de datos:");
+        foreach (Alumno alumno in alumnos)
+        {
+            Console.WriteLine($"DNI: {alumno.DNI}, Nombre: {alumno.Nombre}, Edad: {alumno.Edad}");
+        }
+    }
+}
+
