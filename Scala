@@ -1,0 +1,42 @@
+import slick.jdbc.SQLServerProfile.api._
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+
+// Crea una clase que representa la tabla de la base de datos 
+case class User(id: Long, name: String, age: Int)
+
+// Define la tabla correspondiente en la base de datos
+class Users(tag: Tag) extends Table[User](tag, "users") {
+  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+  def name = column[String]("name")
+  def age = column[Int]("age")
+
+  def * = (id, name, age) <> (User.tupled, User.unapply)
+}
+
+object DatabaseSetup {
+  val db = Database.forConfig("sqlserver")
+
+  val users = TableQuery[Users]
+
+  // Método crear tabla en base de datos 
+  def createTable(): Unit = {
+    val setup = DBIO.seq(
+      users.schema.create
+    )
+    Await.result(db.run(setup), 10.seconds)
+  }
+  def close(): Unit = db.close()
+}
+
+// Objeto para generar el código de la tabla desde la base de datos
+object CodeGenerator extends App {
+  slick.codegen.SourceCodeGenerator.run(
+    profile = "slick.jdbc.SQLServerProfile$",
+    jdbcDriver = "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+    url = "jdbc:sqlserver://<server>:<port>;databaseName=<database>",
+    outputDir = "src/main/scala",
+    pkg = "example"
+  )
+}
