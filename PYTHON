@@ -1,0 +1,60 @@
+import pyodbc
+
+class Persona:
+    def __init__(self, nombre, edad):
+        self.nombre = nombre
+        self.edad = edad
+
+class ManejadorBD:
+    def __init__(self):
+        
+        self.conexion = pyodbc.connect('DRIVER={SQL Server};'
+                                       'SERVER=LAPTOP-V91AJN3A\VE_SERVER;'
+                                       'DATABASE=EjemploPython;'
+                                       'Trusted_Connection=yes;')
+
+        self.cursor = self.conexion.cursor()
+
+    def crear_tabla(self):
+        self.cursor.execute('''
+            CREATE TABLE Personas (
+                ID INT PRIMARY KEY IDENTITY,
+                Nombre NVARCHAR(255),
+                Edad INT
+            )
+        ''')
+        self.conexion.commit()
+
+    def insertar_persona(self, persona):
+        self.cursor.execute('''
+            INSERT INTO Personas (Nombre, Edad)
+            VALUES (?, ?)
+        ''', persona.nombre, persona.edad)
+        self.conexion.commit()
+
+    def obtener_personas(self):
+        self.cursor.execute('SELECT Nombre, Edad FROM Personas')
+        rows = self.cursor.fetchall()
+
+        personas = []
+        for row in rows:
+            personas.append(Persona(row.Nombre, row.Edad))
+
+        return personas
+
+# Uso del código
+manejador_bd = ManejadorBD()
+
+# Comentar la siguiente línea después de ejecutarla una vez para evitar crear la tabla repetidamente
+manejador_bd.crear_tabla()
+
+persona1 = Persona("Juan", 25)
+persona2 = Persona("María", 30)
+
+manejador_bd.insertar_persona(persona1)
+manejador_bd.insertar_persona(persona2)
+
+personas_en_bd = manejador_bd.obtener_personas()
+
+for persona in personas_en_bd:
+    print(f"Nombre: {persona.nombre}, Edad: {persona.edad}")
